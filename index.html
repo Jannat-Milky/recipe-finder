@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Finder</title>
+    <style>
+        :root {
+            --primary: #ff6f61;
+            --primary-dark: #e65a50;
+            --bg: #fafafa;
+            --card-bg: #ffffff;
+            --text: #333;
+            --text-light: #666;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        nav a {
+            margin-left: 1.5rem;
+            text-decoration: none;
+            font-weight: 500;
+            color: var(--text);
+            transition: color 0.2s;
+        }
+        nav a:hover, nav a.active {
+            color: var(--primary);
+        }
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .info-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            max-width: 700px;
+            margin: 2rem auto;
+        }
+        .info-card h2 { color: var(--primary); margin-bottom: 1rem; }
+        .info-card ul { margin-left: 1.5rem; margin-top: 0.5rem; }
+        .info-card li { margin-bottom: 0.5rem; }
+        .search-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            align-items: center;
+            justify-content: center;
+        }
+        .search-box {
+            display: flex;
+            flex: 1 1 300px;
+            max-width: 500px;
+        }
+        .search-box input {
+            flex:1;
+            padding: 0.7rem 1rem;
+            border: 2px solid #ddd;
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+            font-size: 1rem;
+        }
+        .search-box button {
+            padding: 0.7rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .search-box button:hover {
+            background: var(--primary-dark);
+        }
+        .categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+        .cat-btn {
+            background: #eee;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .cat-btn.active, .cat-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+        .meals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .meal-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .meal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+        .meal-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+        .meal-card .info {
+            padding: 0.8rem 1rem;
+        }
+        .meal-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+        }
+        .meal-card .category {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+        .loader {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: var(--text-light);
+        }
+        .modal-overlay {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.3s;
+        }
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+        .modal img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        .modal h2 { margin-bottom: 0.5rem; }
+        .modal .meta { color: var(--text-light); margin-bottom: 1rem; }
+        .ingredients-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .ingredients-list li {
+            background: #f3f3f3;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: 2rem;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+        }
+        footer a { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">🍲 Recipe Finder</div>
+        <nav>
+            <a href="#" data-section="home" class="active">Home</a>
+            <a href="#" data-section="info">Info</a>
+        </nav>
+    </header>
+    <main>
+        <section id="home" class="section active">
+            <div class="search-filter">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search a meal... (e.g. chicken)">
+                    <button id="searchBtn">Search</button>
+                </div>
+            </div>
+            <div class="categories" id="categoryContainer"></div>
+            <div id="mealsContainer" class="meals-grid"></div>
+            <div id="loader" class="loader" style="display:none;">Loading...</div>
+        </section>
+        <section id="info" class="section">
+            <div class="info-card">
+                <h2>👋 Welcome to Recipe Finder</h2>
+                <p>
+                    This is a simple, fast recipe discovery app built with <strong>HTML, CSS, and vanilla JavaScript</strong>.
+                    It uses the free <a href="https://www.themealdb.com/" target="_blank">TheMealDB API</a> to fetch real recipes.
+                </p>
+                <h3>✨ Features</h3>
+                <ul>
+                    <li><strong>Search by name</strong> – type a dish (e.g., "pizza") and see matching meals.</li>
+                    <li><strong>Browse categories</strong> – click a category chip to see all meals in that category.</li>
+                    <li><strong>Detailed view</strong> – click any meal card to open a popup with ingredients, measurements, and cooking instructions.</li>
+                    <li><strong>Responsive design</strong> – works perfectly on mobile, tablet, and desktop.</li>
+                </ul>
+                <h3>🧑‍🍳 How to use</h3>
+                <ol>
+                    <li>On the <strong>Home</strong> page, either search for a meal using the input box or click one of the category buttons.</li>
+                    <li>A grid of meal cards will appear. Click on any card that looks tasty.</li>
+                    <li>A detailed popup shows the full recipe, including all ingredients and steps.</li>
+                    <li>Close the popup by clicking the ✕ button or clicking outside it.</li>
+                    <li>Switch back to the Info page anytime to read this guide again.</li>
+                </ol>
+                <p style="margin-top:1rem;">Enjoy cooking! 🍽️</p>
+            </div>
+        </section>
+    </main>
+    <footer>
+        Made with ❤️ by Jannat-Milky | Data from <a href="https://www.themealdb.com/" target="_blank">TheMealDB</a>
+    </footer>
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="mealModal">
+            <button class="modal-close" id="modalClose">&times;</button>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+    <script>
+        (function() {
+            const API_BASE = 'https://www.themealdb.com/api/json/v1/1';
+
+            const homeSection = document.getElementById('home');
+            const infoSection = document.getElementById('info');
+            const navLinks = document.querySelectorAll('nav a[data-section]');
+            const searchInput = document.getElementById('searchInput');
+            const searchBtn = document.getElementById('searchBtn');
+            const categoryContainer = document.getElementById('categoryContainer');
+            const mealsContainer = document.getElementById('mealsContainer');
+            const loader = document.getElementById('loader');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalContent = document.getElementById('modalContent');
+            const modalClose = document.getElementById('modalClose');
+
+            let currentCategory = null;
+
+            const PORK_WORDS = ['pork', 'ham', 'bacon', 'gammon', 'prosciutto', 'pancetta', 'chorizo'];
+            function filterPorkMeals(meals) {
+                if (!meals) return [];
+                return meals.filter(meal => {
+                    const name = meal.strMeal.toLowerCase();
+                    return !PORK_WORDS.some(word => name.includes(word));
+                });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = link.getAttribute('data-section');
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    document.getElementById(section).classList.add('active');
+                    modalOverlay.classList.remove('active');
+                });
+            });
+
+            async function fetchData(endpoint) {
+                loader.style.display = 'block';
+                mealsContainer.innerHTML = '';
+                try {
+                    const res = await fetch(`${API_BASE}/${endpoint}`);
+                    if (!res.ok) throw new Error('Network error');
+                    const data = await res.json();
+                    return data;
+                } catch (err) {
+                    mealsContainer.innerHTML = '<p style="text-align:center; color:red;">Failed to load data. Check your connection.</p>';
+                    return null;
+                } finally {
+                    loader.style.display = 'none';
+                }
+            }
+
+            function renderMeals(meals) {
+                const filtered = filterPorkMeals(meals);
+                if (!filtered || filtered.length === 0) {
+                    mealsContainer.innerHTML = '<p style="text-align:center;">No meals found. Try another search or category.</p>';
+                    return;
+                }
+                mealsContainer.innerHTML = filtered.map(meal => `
+                    <div class="meal-card" data-id="${meal.idMeal}">
+                        <img src="${meal.strMealThumb}" alt="${meal.strMeal}" loading="lazy">
+                        <div class="info">
+                            <h3>${meal.strMeal}</h3>
+                            <p class="category">${meal.strCategory || ''}</p>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.querySelectorAll('.meal-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const id = card.getAttribute('data-id');
+                        openMealDetail(id);
+                    });
+                });
+            }
+
+            async function searchMeals(query) {
+                currentCategory = null;
+                updateCategoryButtons();
+                const data = await fetchData(`search.php?s=${encodeURIComponent(query)}`);
+                if (data && data.meals) {
+                    renderMeals(data.meals);
+                } else {
+                    mealsContainer.innerHTML = '<p style="text-align:center;">No meals found for "' + query + '"</p>';
+                }
+            }
+
+            async function loadMealsByCategory(category) {
+                currentCategory = category;
+                updateCategoryButtons();
+                const data = await fetchData(`filter.php?c=${encodeURIComponent(category)}`);
+                if (data && data.meals) {
+                    renderMeals(data.meals);
+                } else {
+                    mealsContainer.innerHTML = '<p style="text-align:center;">No meals in this category.</p>';
+                }
+            }
+
+            async function loadCategories() {
+                const data = await fetchData('categories.php');
+                if (!data || !data.categories) return;
+                let categories = data.categories.filter(cat => cat.strCategory.toLowerCase() !== 'pork');
+                categoryContainer.innerHTML = categories.map(cat => 
+                    `<button class="cat-btn" data-category="${cat.strCategory}">${cat.strCategory}</button>`
+                ).join('');
+                categoryContainer.querySelectorAll('.cat-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const cat = btn.getAttribute('data-category');
+                        loadMealsByCategory(cat);
+                    });
+                });
+            }
+
+            function updateCategoryButtons() {
+                document.querySelectorAll('.cat-btn').forEach(btn => {
+                    if (btn.getAttribute('data-category') === currentCategory) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            async function openMealDetail(id) {
+                const data = await fetchData(`lookup.php?i=${id}`);
+                if (!data || !data.meals) return;
+                const meal = data.meals[0];
+                let ingredientsHtml = '';
+                for (let i = 1; i <= 20; i++) {
+                    const ingredient = meal[`strIngredient${i}`];
+                    const measure = meal[`strMeasure${i}`];
+                    if (ingredient && ingredient.trim()) {
+                        ingredientsHtml += `<li>${measure} ${ingredient}</li>`;
+                    }
+                }
+                modalContent.innerHTML = `
+                    <img src="${meal.strMealThumb}" alt="${meal.strMeal}">
+                    <h2>${meal.strMeal}</h2>
+                    <p class="meta"><strong>Category:</strong> ${meal.strCategory} | <strong>Area:</strong> ${meal.strArea || 'Unknown'}</p>
+                    <h3>Ingredients</h3>
+                    <ul class="ingredients-list">${ingredientsHtml}</ul>
+                    <h3>Instructions</h3>
+                    <p style="white-space: pre-line;">${meal.strInstructions}</p>
+                    ${meal.strYoutube ? `<a href="${meal.strYoutube}" target="_blank" style="display:inline-block; margin-top:1rem; color:var(--primary);">Watch on YouTube</a>` : ''}
+                `;
+                modalOverlay.classList.add('active');
+            }
+
+            function closeModal() {
+                modalOverlay.classList.remove('active');
+                modalContent.innerHTML = '';
+            }
+
+            modalClose.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) closeModal();
+            });
+
+            searchBtn.addEventListener('click', () => {
+                const query = searchInput.value.trim();
+                if (query) searchMeals(query);
+            });
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const query = searchInput.value.trim();
+                    if (query) searchMeals(query);
+                }
+            });
+
+            loadCategories();
+            searchMeals('chicken');
+        })();
+    </script>
+</body>
+</html>
